@@ -1,0 +1,126 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #2F4F4F; /* Fundo escuro (cinza-azulado) */
+    color: #F5F5F5; /* Texto claro para legibilidade */
+}
+h1 {
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #FFFFFF; /* Branco para destacar o título */
+}
+h2 {
+    text-align: center;
+    font-size: 1.5em;
+    margin-bottom: 30px;
+    color: #D3D3D3; /* Cinza claro para o subtítulo */
+}
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    text-align: center;
+}
+nav ul li {
+    margin: 10px 0;
+}
+nav ul li a {
+    text-decoration: none;
+    color: #90EE90; /* Verde claro para os links */
+    font-size: 18px;
+}
+nav ul li a:hover {
+    text-decoration: underline;
+    color: #98FB98; /* Verde mais claro ao passar o mouse */
+}
+form {
+    margin-bottom: 20px;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #F5F5F5; /* Texto claro para labels */
+}
+input[type="text"], textarea {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    background-color: #FFFFFF; /* Fundo branco para inputs e textarea */
+    color: #000000; /* Texto preto nos inputs e textarea */
+    border: 1px solid #ccc;
+}
+textarea {
+    resize: vertical; /* Permite redimensionar apenas verticalmente */
+}
+button {
+    padding: 10px 15px;
+    background-color: #4CAF50; /* Verde para botões */
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #45a049;
+}
+#output {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    color: #000000; /* Texto preto na saída */
+}
+.contact-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #FFFFFF; /* Fundo branco para itens de contato */
+    color: #000000; /* Texto preto para itens de contato */
+}
+a {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #90EE90; /* Verde claro para links */
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+    color: #98FB98; /* Verde mais claro ao passar o mouse */
+}
+/* Estilos para o formulário de login */
+#loginForm {
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #90EE90;
+    border-radius: 5px;
+    background-color: #36454F; /* Cinza escuro para o fundo do formulário */
+    text-align: center;
+}
+
+#loginForm h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+#authForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#authForm input[type="password"] {
+    width: 90%;
+    margin-bottom: 15px;
+}
+
+#authForm button {
+    width: 90%;
+}
