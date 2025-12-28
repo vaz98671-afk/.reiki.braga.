@@ -53,55 +53,91 @@
 <body>
     <h1>Atualizar Contato</h1>
     <a href="index.html">Voltar ao Início</a>
-    <form id="updateForm">
-        <label for="updateQuery">Nome ou Número de Contribuinte (para buscar):</label>
-        <input type="text" id="updateQuery" required>
-        <label for="updateName">Novo Nome:</label>
+
+    <form id="searchForm">
+        <label for="searchQuery">Nome ou Número de Contribuinte (para buscar):</label>
+        <input type="text" id="searchQuery" required>
+        <button type="submit">Buscar Cliente</button>
+    </form>
+
+    <div id="output"></div>
+
+    <form id="editForm" style="display:none;">
+        <h2>Editar Ficha</h2>
+        <label for="updateName">Nome:</label>
         <input type="text" id="updateName">
-        <label for="updateTaxNumber">Novo Número de Contribuinte:</label>
+        <label for="updateTaxNumber">Número de Contribuinte:</label>
         <input type="text" id="updateTaxNumber" placeholder="Ex.: 123456789">
-        <label for="updatePhone">Novo Telefone:</label>
+        <label for="updatePhone">Telefone:</label>
         <input type="text" id="updatePhone">
-        <label for="updateEmail">Novo Email:</label>
+        <label for="updateEmail">Email:</label>
         <input type="text" id="updateEmail">
-        <label for="updateNotes">Novas Anotações:</label>
+        <label for="updateNotes">Anotações:</label>
         <textarea id="updateNotes" rows="5" placeholder="Escreva anotações sobre o cliente"></textarea>
         <button type="submit">Atualizar</button>
     </form>
-    <div id="output"></div>
+
     <script src="contacts.js"></script>
     <script>
-        document.getElementById('updateForm').addEventListener('submit', function(e) {
+        let contactToUpdate = null;
+
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const query = document.getElementById('updateQuery').value.trim().toLowerCase();
+            const query = document.getElementById('searchQuery').value.trim().toLowerCase();
+            const contacts = loadContacts();
+            const foundContact = contacts.find(c => 
+                c.name.toLowerCase() === query || 
+                (c.taxNumber && c.taxNumber.toLowerCase() === query)
+            );
+
+            const outputDiv = document.getElementById('output');
+            const editForm = document.getElementById('editForm');
+
+            if (foundContact) {
+                contactToUpdate = foundContact;
+                document.getElementById('updateName').value = foundContact.name;
+                document.getElementById('updateTaxNumber').value = foundContact.taxNumber || '';
+                document.getElementById('updatePhone').value = foundContact.phone || '';
+                document.getElementById('updateEmail').value = foundContact.email || '';
+                document.getElementById('updateNotes').value = foundContact.notes || '';
+                
+                outputDiv.innerText = `A editar o cliente: ${foundContact.name}`;
+                editForm.style.display = 'block';
+            } else {
+                contactToUpdate = null;
+                outputDiv.innerText = 'Cliente não encontrado.';
+                editForm.style.display = 'none';
+            }
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!contactToUpdate) return;
+
             const newName = document.getElementById('updateName').value.trim();
             const newTaxNumber = document.getElementById('updateTaxNumber').value.trim();
             const newPhone = document.getElementById('updatePhone').value.trim();
             const newEmail = document.getElementById('updateEmail').value.trim();
             const newNotes = document.getElementById('updateNotes').value.trim();
-            if (query) {
-                const contacts = loadContacts();
-                const index = contacts.findIndex(c => 
-                    c.name.toLowerCase() === query || 
-                    (c.taxNumber && c.taxNumber.toLowerCase() === query)
-                );
-                if (index !== -1) {
-                    const contact = contacts[index];
-                    contacts[index] = { 
-                        name: newName || contact.name, 
-                        taxNumber: newTaxNumber || contact.taxNumber, 
-                        phone: newPhone || contact.phone, 
-                        email: newEmail || contact.email, 
-                        notes: newNotes || contact.notes
-                    };
-                    saveContacts(contacts);
-                    document.getElementById('output').innerText = 'Contato atualizado com sucesso!';
-                    this.reset();
-                } else {
-                    document.getElementById('output').innerText = 'Contato não encontrado.';
-                }
+
+            let contacts = loadContacts();
+            const index = contacts.findIndex(c => c.name === contactToUpdate.name && c.taxNumber === contactToUpdate.taxNumber);
+
+            if (index !== -1) {
+                contacts[index] = {
+                    name: newName || contacts[index].name,
+                    taxNumber: newTaxNumber || contacts[index].taxNumber,
+                    phone: newPhone || contacts[index].phone,
+                    email: newEmail || contacts[index].email,
+                    notes: newNotes || contacts[index].notes
+                };
+                saveContacts(contacts);
+                document.getElementById('output').innerText = 'Contato atualizado com sucesso!';
+                document.getElementById('editForm').style.display = 'none';
+                document.getElementById('searchForm').reset();
+                contactToUpdate = null;
             } else {
-                document.getElementById('output').innerText = 'Preencha pelo menos um campo para atualizar.';
+                document.getElementById('output').innerText = 'Erro: Não foi possível encontrar o contato original para atualizar.';
             }
         });
     </script>
