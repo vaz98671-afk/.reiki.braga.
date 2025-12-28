@@ -124,3 +124,10 @@ a:hover {
 #authForm button {
     width: 90%;
 }
+
+/* Estilos para garantir que o texto longo não seja cortado */
+.contact-item p {
+    white-space: pre-wrap; /* Permite quebra de linha e preserva espaços */
+    word-wrap: break-word; /* Garante quebra de linha em palavras longas */
+    margin: 5px 0;
+}
