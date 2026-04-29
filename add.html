@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <script>
@@ -67,19 +28,46 @@
         <button type="submit">Adicionar</button>
     </form>
     <div id="output"></div>
-    <script src="contacts.js"></script>
-    <script>
-        document.getElementById('addForm').addEventListener('submit', function(e) {
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_vfqR52SPO3xNm1jq5rMxnqY31erFHWg",
+            authDomain: "reiki-gerenciamento.firebaseapp.com",
+            projectId: "reiki-gerenciamento",
+            storageBucket: "reiki-gerenciamento.firebasestorage.app",
+            messagingSenderId: "913549564652",
+            appId: "1:913549564652:web:7594db85cbcd820c0a23c9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('addForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('addName').value.trim();
             const taxNumber = document.getElementById('addTaxNumber').value.trim();
             const phone = document.getElementById('addPhone').value.trim();
             const email = document.getElementById('addEmail').value.trim();
             const notes = document.getElementById('addNotes').value.trim();
+            
             if (name || taxNumber || phone || email || notes) {
-                addContact(name, taxNumber, phone, email, notes);
-                document.getElementById('output').innerText = 'Contato adicionado com sucesso!';
-                this.reset();
+                try {
+                    await addDoc(collection(db, "contacts"), {
+                        name: name || "N/A",
+                        taxNumber: taxNumber || "N/A",
+                        phone: phone || "N/A",
+                        email: email || "N/A",
+                        notes: notes || "N/A",
+                        createdAt: new Date()
+                    });
+                    document.getElementById('output').innerText = 'Contato adicionado com sucesso!';
+                    this.reset();
+                } catch (error) {
+                    console.error("Erro:", error);
+                    document.getElementById('output').innerText = 'Erro ao adicionar contato!';
+                }
             } else {
                 document.getElementById('output').innerText = 'Preencha pelo menos um campo para adicionar o contato.';
             }
