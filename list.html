@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <script>
@@ -55,27 +16,49 @@
     <a href="index.html">Voltar ao Início</a>
     <button id="listBtn">Listar</button>
     <div id="contactList"></div>
-    <script src="contacts.js"></script>
-    <script>
-        document.getElementById('listBtn').addEventListener('click', function() {
-            const contacts = loadContacts();
-            const listDiv = document.getElementById('contactList');
-            listDiv.innerHTML = '';
-            if (contacts.length === 0) {
-                listDiv.innerHTML = '<p>Nenhum contato encontrado.</p>';
-            } else {
-                contacts.forEach(contact => {
-                    const div = document.createElement('div');
-                    div.className = 'contact-item';
-                    div.innerHTML = `
-                        Nome: ${contact.name}<br>
-                        Número de Contribuinte: ${contact.taxNumber || 'Não informado'}<br>
-                        Telefone: ${contact.phone}<br>
-                        Email: ${contact.email}<br>
-                        <p>Anotações: ${contact.notes || 'Nenhuma anotação.'}</p>
-                    `;
-                    listDiv.appendChild(div);
-                });
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_vfqR52SPO3xNm1jq5rMxnqY31erFHWg",
+            authDomain: "reiki-gerenciamento.firebaseapp.com",
+            projectId: "reiki-gerenciamento",
+            storageBucket: "reiki-gerenciamento.firebasestorage.app",
+            messagingSenderId: "913549564652",
+            appId: "1:913549564652:web:7594db85cbcd820c0a23c9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('listBtn').addEventListener('click', async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "contacts"));
+                const listDiv = document.getElementById('contactList');
+                listDiv.innerHTML = '';
+                
+                if (querySnapshot.empty) {
+                    listDiv.innerHTML = '<p>Nenhum contato encontrado.</p>';
+                } else {
+                    querySnapshot.forEach(doc => {
+                        const contact = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'contact-item';
+                        const notesFormatted = (contact.notes || 'Nenhuma anotação.').replace(/\n/g, '<br>');
+                        div.innerHTML = `
+                            Nome: ${contact.name}<br>
+                            Número de Contribuinte: ${contact.taxNumber || 'Não informado'}<br>
+                            Telefone: ${contact.phone}<br>
+                            Email: ${contact.email}<br>
+                            <p style="white-space: pre-wrap; word-wrap: break-word;">Anotações: ${notesFormatted}</p>
+                        `;
+                        listDiv.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                document.getElementById('contactList').innerHTML = '<p>Erro ao carregar contatos!</p>';
             }
         });
     </script>
