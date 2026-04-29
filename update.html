@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <script>
@@ -77,40 +38,62 @@
         <button type="submit">Atualizar</button>
     </form>
 
-    <script src="contacts.js"></script>
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_vfqR52SPO3xNm1jq5rMxnqY31erFHWg",
+            authDomain: "reiki-gerenciamento.firebaseapp.com",
+            projectId: "reiki-gerenciamento",
+            storageBucket: "reiki-gerenciamento.firebasestorage.app",
+            messagingSenderId: "913549564652",
+            appId: "1:913549564652:web:7594db85cbcd820c0a23c9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         let contactToUpdate = null;
 
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const query = document.getElementById('searchQuery').value.trim().toLowerCase();
-            const contacts = loadContacts();
-            const foundContact = contacts.find(c => 
-                c.name.toLowerCase() === query || 
-                (c.taxNumber && c.taxNumber.toLowerCase() === query)
-            );
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "contacts"));
+                const foundContact = Array.from(querySnapshot.docs)
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .find(c => 
+                        (c.name && c.name.toLowerCase() === query) || 
+                        (c.taxNumber && c.taxNumber.toLowerCase() === query)
+                    );
 
-            const outputDiv = document.getElementById('output');
-            const editForm = document.getElementById('editForm');
+                const outputDiv = document.getElementById('output');
+                const editForm = document.getElementById('editForm');
 
-            if (foundContact) {
-                contactToUpdate = foundContact;
-                document.getElementById('updateName').value = foundContact.name;
-                document.getElementById('updateTaxNumber').value = foundContact.taxNumber || '';
-                document.getElementById('updatePhone').value = foundContact.phone || '';
-                document.getElementById('updateEmail').value = foundContact.email || '';
-                document.getElementById('updateNotes').value = foundContact.notes || '';
-                
-                outputDiv.innerText = `A editar o cliente: ${foundContact.name}`;
-                editForm.style.display = 'block';
-            } else {
-                contactToUpdate = null;
-                outputDiv.innerText = 'Cliente não encontrado.';
-                editForm.style.display = 'none';
+                if (foundContact) {
+                    contactToUpdate = foundContact;
+                    document.getElementById('updateName').value = foundContact.name || '';
+                    document.getElementById('updateTaxNumber').value = foundContact.taxNumber || '';
+                    document.getElementById('updatePhone').value = foundContact.phone || '';
+                    document.getElementById('updateEmail').value = foundContact.email || '';
+                    document.getElementById('updateNotes').value = foundContact.notes || '';
+                    
+                    outputDiv.innerText = `A editar o cliente: ${foundContact.name}`;
+                    editForm.style.display = 'block';
+                } else {
+                    contactToUpdate = null;
+                    outputDiv.innerText = 'Cliente não encontrado.';
+                    editForm.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                document.getElementById('output').innerText = 'Erro ao procurar cliente!';
             }
         });
 
-        document.getElementById('editForm').addEventListener('submit', function(e) {
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!contactToUpdate) return;
 
@@ -120,24 +103,21 @@
             const newEmail = document.getElementById('updateEmail').value.trim();
             const newNotes = document.getElementById('updateNotes').value.trim();
 
-            let contacts = loadContacts();
-            const index = contacts.findIndex(c => c.name === contactToUpdate.name && c.taxNumber === contactToUpdate.taxNumber);
-
-            if (index !== -1) {
-                contacts[index] = {
-                    name: newName || contacts[index].name,
-                    taxNumber: newTaxNumber || contacts[index].taxNumber,
-                    phone: newPhone || contacts[index].phone,
-                    email: newEmail || contacts[index].email,
-                    notes: newNotes || contacts[index].notes
-                };
-                saveContacts(contacts);
+            try {
+                await updateDoc(doc(db, "contacts", contactToUpdate.id), {
+                    name: newName || contactToUpdate.name,
+                    taxNumber: newTaxNumber || contactToUpdate.taxNumber,
+                    phone: newPhone || contactToUpdate.phone,
+                    email: newEmail || contactToUpdate.email,
+                    notes: newNotes || contactToUpdate.notes
+                });
                 document.getElementById('output').innerText = 'Contato atualizado com sucesso!';
                 document.getElementById('editForm').style.display = 'none';
                 document.getElementById('searchForm').reset();
                 contactToUpdate = null;
-            } else {
-                document.getElementById('output').innerText = 'Erro: Não foi possível encontrar o contato original para atualizar.';
+            } catch (error) {
+                console.error("Erro:", error);
+                document.getElementById('output').innerText = 'Erro ao atualizar contato!';
             }
         });
     </script>
